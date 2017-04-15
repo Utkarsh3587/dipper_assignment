@@ -27,12 +27,15 @@ class DipperController < ApplicationController
   def server_status
     status={}
     @@connection.each do |key, _value|
+      return  unless @@connection.has_key?(key)
       current_time = Time.now.to_i
-      if current_time >= @@connection[key][:incoming_time] + @@connection[key][:kill_time]
+      if @@connection[key] && current_time >= @@connection[key][:incoming_time] + @@connection[key][:kill_time]
         @@connection[key] = nil
       else
-        status[key] = (@@connection[key][:incoming_time] + @@connection[key][:kill_time] - current_time).to_s
+        if @@connection[key]
+          status[key] = (@@connection[key][:incoming_time] + @@connection[key][:kill_time] - current_time).to_s
         end
+      end
     end
     render json: status.to_json
   end
@@ -40,14 +43,14 @@ class DipperController < ApplicationController
   def kill
     @@connection.each do |key, _value|
       current_time = Time.now.to_i
-      if current_time >= @@connection[key][:incoming_time] + @@connection[key][:kill_time]
+      if @@connection[key] && current_time >= @@connection[key][:incoming_time] + @@connection[key][:kill_time]
         @@connection[key] = nil
       end
     end
     conn_id=params[:connId]
     @@kill_connection[conn_id] = true
     if @@connection[conn_id]
-      render json: {status: "ok"}
+      render json: {status: 'ok'}
     else
       render json: {status: "Not Found connId #{conn_id}"}
     end
